@@ -12,7 +12,7 @@ To run docker image with dependencies:
 
 ## Build docker image for any commit
 
-Refer to [docker-builds](https://github.com/temporalio/docker-builds) to build the images manually
+Refer to [docker-builds](https://github.com/temporalio/docker-builds) to build the images manually.
 
 ## Run Temporal with custom docker image
 
