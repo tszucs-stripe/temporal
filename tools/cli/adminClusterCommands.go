@@ -125,6 +125,22 @@ func AdminUpdateClusterName(c *cli.Context) {
 	fmt.Println("Successfully updated cluster name from ", currentCluster, " to ", newCluster)
 }
 
+func AdminRemoveRemoteClusterFromDB(c *cli.Context) {
+	currentCluster := c.String(FlagCluster)
+
+	session := connectToCassandra(c)
+	clusterStore, err := cassandra.NewClusterMetadataStore(session, log.NewNoopLogger())
+	if err != nil {
+		ErrorAndExit("Failed to connect to Cassandra", err)
+	}
+	clusterMetadataManager := persistence.NewClusterMetadataManagerImpl(clusterStore, "", log.NewNoopLogger())
+
+	err = clusterMetadataManager.DeleteClusterMetadata(&persistence.DeleteClusterMetadataRequest{ClusterName: currentCluster})
+	if err != nil {
+		ErrorAndExit("Failed to delete cluster metadata", err)
+	}
+}
+
 func AdminBackfillNamespaceWithClusterName(c *cli.Context) {
 	newCluster := c.String(FlagNewCluster)
 

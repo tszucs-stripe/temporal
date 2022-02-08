@@ -555,6 +555,22 @@ func newAdminClusterCommands() []cli.Command {
 				AdminUpdateClusterName(c)
 			},
 		},
+		{
+			Name:    "force-delete",
+			Aliases: []string{"fd"},
+			Usage:   "Force delete cluster metadata",
+			Flags: append(
+				getDBFlags(),
+				cli.StringFlag{
+					Name:     FlagCluster,
+					Usage:    "Original cluster name",
+					Required: true,
+				},
+			),
+			Action: func(c *cli.Context) {
+				AdminRemoveRemoteClusterFromDB(c)
+			},
+		},
 	}
 }
 
