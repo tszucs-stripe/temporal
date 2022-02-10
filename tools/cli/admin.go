@@ -566,6 +566,11 @@ func newAdminClusterCommands() []cli.Command {
 					Usage:    "Original cluster name",
 					Required: true,
 				},
+				cli.StringFlag{
+					Name:     FlagNewCluster,
+					Usage:    "New cluster name",
+					Required: true,
+				},
 			),
 			Action: func(c *cli.Context) {
 				AdminRemoveRemoteClusterFromDB(c)

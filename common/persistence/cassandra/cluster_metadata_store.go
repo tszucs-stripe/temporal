@@ -46,6 +46,7 @@ const (
 	templateGetClusterMetadataV1    = `SELECT data, data_encoding, version FROM cluster_metadata WHERE metadata_partition = ?`
 	templateCreateClusterMetadataV1 = `INSERT INTO cluster_metadata (metadata_partition, data, data_encoding, version) VALUES(?, ?, ?, ?) IF NOT EXISTS`
 	templateUpdateClusterMetadataV1 = `UPDATE cluster_metadata SET data = ?, data_encoding = ?, version = ? WHERE metadata_partition = ? IF version = ?`
+	templateDeleteClusterMetadataV1 = `DELETE FROM cluster_metadata WHERE metadata_partition = ?`
 
 	// ****** CLUSTER_METADATA_INFO TABLE ******
 	templateListClusterMetadata   = `SELECT data, data_encoding, version FROM cluster_metadata_info WHERE metadata_partition = ?`
@@ -234,6 +235,11 @@ func (m *ClusterMetadataStore) DeleteClusterMetadata(request *p.InternalDeleteCl
 	query := m.session.Query(templateDeleteClusterMetadata, constMetadataPartition, request.ClusterName)
 	if err := query.Exec(); err != nil {
 		return gocql.ConvertError("DeleteClusterMetadata", err)
+	}
+
+	query = m.session.Query(templateDeleteClusterMetadataV1, constMetadataPartition)
+	if err := query.Exec(); err != nil {
+		return gocql.ConvertError("DeleteClusterMetadataV1", err)
 	}
 	return nil
 }

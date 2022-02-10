@@ -101,7 +101,7 @@ func AdminUpdateClusterName(c *cli.Context) {
 
 	applied, err := clusterMetadataManager.SaveClusterMetadata(&persistence.SaveClusterMetadataRequest{
 		ClusterMetadata: persistencespb.ClusterMetadata{
-			ClusterName:              newCluster,
+			ClusterName:              currentCluster,
 			HistoryShardCount:        currentClusterMetadata.HistoryShardCount,
 			ClusterId:                currentClusterMetadata.ClusterId,
 			VersionInfo:              currentClusterMetadata.VersionInfo,
@@ -110,30 +110,48 @@ func AdminUpdateClusterName(c *cli.Context) {
 			FailoverVersionIncrement: currentClusterMetadata.FailoverVersionIncrement,
 			InitialFailoverVersion:   currentClusterMetadata.InitialFailoverVersion,
 			IsGlobalNamespaceEnabled: currentClusterMetadata.IsGlobalNamespaceEnabled,
-			IsConnectionEnabled:      currentClusterMetadata.IsConnectionEnabled,
+			IsConnectionEnabled:      false,
 		},
-		Version: 0,
+		Version: currentClusterMetadata.Version,
 	})
 	if !applied || err != nil {
-		ErrorAndExit("Failed to create new cluster metadata", err)
+		ErrorAndExit("Failed to update current cluster metadata", err)
 	}
-	// Use raw store client to delete
-	err = clusterStore.DeleteClusterMetadata(&persistence.InternalDeleteClusterMetadataRequest{ClusterName: currentCluster})
-	if err != nil {
-		ErrorAndExit("Failed to delete old cluster metadata", err)
+
+	if currentCluster != newCluster {
+		applied, err = clusterMetadataManager.SaveClusterMetadata(&persistence.SaveClusterMetadataRequest{
+			ClusterMetadata: persistencespb.ClusterMetadata{
+				ClusterName:              newCluster,
+				HistoryShardCount:        currentClusterMetadata.HistoryShardCount,
+				ClusterId:                currentClusterMetadata.ClusterId,
+				VersionInfo:              currentClusterMetadata.VersionInfo,
+				IndexSearchAttributes:    currentClusterMetadata.IndexSearchAttributes,
+				ClusterAddress:           currentClusterMetadata.ClusterAddress,
+				FailoverVersionIncrement: currentClusterMetadata.FailoverVersionIncrement,
+				InitialFailoverVersion:   currentClusterMetadata.InitialFailoverVersion + 1,
+				IsGlobalNamespaceEnabled: currentClusterMetadata.IsGlobalNamespaceEnabled,
+				IsConnectionEnabled:      false,
+			},
+			Version: 0,
+		})
+		if !applied || err != nil {
+			ErrorAndExit("Failed to create new cluster metadata", err)
+		}
+		fmt.Println("Successfully updated cluster name from ", currentCluster, " to ", newCluster)
 	}
-	fmt.Println("Successfully updated cluster name from ", currentCluster, " to ", newCluster)
+	fmt.Println("Successfully backfill cluster ", currentCluster)
 }
 
 func AdminRemoveRemoteClusterFromDB(c *cli.Context) {
 	currentCluster := c.String(FlagCluster)
+	newCluster := c.String(FlagNewCluster)
 
 	session := connectToCassandra(c)
 	clusterStore, err := cassandra.NewClusterMetadataStore(session, log.NewNoopLogger())
 	if err != nil {
 		ErrorAndExit("Failed to connect to Cassandra", err)
 	}
-	clusterMetadataManager := persistence.NewClusterMetadataManagerImpl(clusterStore, "", log.NewNoopLogger())
+	clusterMetadataManager := persistence.NewClusterMetadataManagerImpl(clusterStore, newCluster, log.NewNoopLogger())
 
 	err = clusterMetadataManager.DeleteClusterMetadata(&persistence.DeleteClusterMetadataRequest{ClusterName: currentCluster})
 	if err != nil {
